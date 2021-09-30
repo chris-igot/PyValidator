@@ -21,13 +21,13 @@ class Validator:
 			raise e
 
 		if strong_type:
-			if not cls.__verify_type__(data,data_type):
+			if not cls.__verify_type__(data,data_type,err_func):
 				valid = False
 		else:
 			type_casted_data = None
 
 			try:
-				type_casted_data = cls.__verify_type__(data_type(data),data_type)
+				type_casted_data = cls.__verify_type__(data_type(data),data_type,err_func)
 			except ValueError as e:
 				err_func("Unable to type cast data","general_error")
 				raise e
@@ -59,19 +59,24 @@ class Validator:
 		print("DATA4",data,valid,type(ch),"\n",validation_matrix)
 
 		if "content" in validation_matrix:
-			content = validation_matrix["content"]
-			if data_type == dict and type(content) == dict:
-				sub_content_valid: bool = True
-				for key, sub_validation_matrix in content.items():
+			sub_validation_matrices = validation_matrix["content"]
+			sub_content_valid: bool = True
+			if data_type == dict and type(sub_validation_matrices) == dict:
+				for key, sub_validation_matrix in sub_validation_matrices.items():
 					if not cls.validate(data[key],sub_validation_matrix,strict,strong_type):
 						sub_content_valid = False
-				if not sub_validation_matrix:
-					valid = False
-			# elif data_type == list and type(content) == list:
-			# 	sub_content_valid: bool = True
-			# 	for t in content:
-			# 		if strong_type:
-			# 			pass
+			elif data_type == list and type(sub_validation_matrices) == list:
+				for datum in data:
+					temp_valid = False
+					for sub_validation_matrix in sub_validation_matrices:
+						if cls.validate(datum,sub_validation_matrix,err_func,strict,strong_type):
+							temp_valid = True
+							break
+					if not temp_valid:
+						sub_content_valid = False
+				
+			if not sub_content_valid:
+				valid = False
 		
 		return valid
 	
@@ -101,4 +106,4 @@ class Validator:
 			err_func("Data does not match type in validation", "general_error")
 			return False
 
-print(type(function_type))
+# print(type(function_type))
